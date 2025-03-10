@@ -20,6 +20,6 @@ def oladapofunction2(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
     else:
         return func.HttpResponse(
-             "This is a great day. Pass a name in the query string or in the request body for a personalized response.",
+             "This is a very bad day. ",
              status_code=200
         )
