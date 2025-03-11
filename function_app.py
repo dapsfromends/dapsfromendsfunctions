@@ -20,6 +20,6 @@ def oladapofunction2(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
     else:
         return func.HttpResponse(
-             "My name is Dapo ",
+             "My name is Dapo Daniel",
              status_code=200
         )
