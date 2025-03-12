@@ -1,7 +1,9 @@
-name: Deploy My Python project
+name: CI/CD Pipeline for Task Management API
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
 
 env:
@@ -10,14 +12,41 @@ env:
   PYTHON_VERSION: '3.11'
 
 jobs:
-  build-and-deploy:
+  test:
+    name: Test
     runs-on: ubuntu-latest
-    environment: dev
     steps:
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@v3
 
-    - name: Setup Python ${{ env.PYTHON_VERSION }} Environment
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 'Install Dependencies'
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-asyncio
+        pip install -r requirements.txt
+
+    - name: 'Run Tests'
+      shell: bash
+      run: |
+        pytest -v
+
+  deploy:
+    name: Deploy
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v3
+
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
@@ -25,10 +54,8 @@ jobs:
     - name: 'Resolve Project Dependencies Using Pip'
       shell: bash
       run: |
-        pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
         python -m pip install --upgrade pip
         pip install -r requirements.txt --target=".python_packages/lib/site-packages"
-        popd
         
     - name: 'Login to Azure'
       uses: azure/login@v1
@@ -37,7 +64,6 @@ jobs:
 
     - name: 'Run Azure Functions Action'
       uses: Azure/functions-action@v1
-      id: fa
       with:
         app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
         package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
