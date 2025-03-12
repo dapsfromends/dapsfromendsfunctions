@@ -60,4 +60,4 @@ def test_get_tasks():
     assert resp.status_code == 200
     response_body = json.loads(resp.get_body())
     assert len(response_body) == 1
-    assert response_body[0]["title"] == "Test Task"
+    assert response_body[0]["title"] == "Test Tasks"
