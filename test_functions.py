@@ -18,8 +18,11 @@ def test_create_task():
         body=json.dumps({"title": "Test Task", "description": "Testing"}).encode()
     )
     
-    # Call our function
-    resp = app.get_routes()[1].get_user_function()(req)
+    # Import the function directly
+    from function_app import create_task
+    
+    # Call our function directly
+    resp = create_task(req)
     
     # Check response
     assert resp.status_code == 201
@@ -36,17 +39,22 @@ def test_get_tasks():
         headers={'Content-Type': 'application/json'},
         body=json.dumps({"title": "Test Task"}).encode()
     )
-    app.get_routes()[1].get_user_function()(create_req)
+    
+    # Import the functions directly
+    from function_app import create_task, get_tasks
+    
+    # Create a task first
+    create_task(create_req)
     
     # Now get all tasks
-    req = func.HttpRequest(
+    get_req = func.HttpRequest(
         method='GET',
         url='/api/tasks',
         body=None
     )
     
     # Call our function
-    resp = app.get_routes()[2].get_user_function()(req)
+    resp = get_tasks(get_req)
     
     # Check response
     assert resp.status_code == 200
