@@ -41,7 +41,7 @@ jobs:
     needs: test
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    environment: production
+    
     steps:
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@v3
