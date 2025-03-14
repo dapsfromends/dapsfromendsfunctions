@@ -41,8 +41,12 @@ def create_task(req: func.HttpRequest) -> func.HttpResponse:
         # Get request body
         req_body = req.get_json()
         
+        # Add enhanced logging
+        logging.info(f'Request body: {req_body}')
+        
         # Check if required fields are present
         if not req_body or 'title' not in req_body:
+            logging.warning('Missing required field: title')
             return func.HttpResponse(
                 "Please pass a title in the request body",
                 status_code=400
@@ -58,6 +62,9 @@ def create_task(req: func.HttpRequest) -> func.HttpResponse:
             "completed_at": None
         }
         
+        # Log task creation
+        logging.info(f'Created new task with ID: {new_task["id"]}, Title: "{new_task["title"]}"')
+        
         # Add to our "database"
         tasks.append(new_task)
         
@@ -68,6 +75,7 @@ def create_task(req: func.HttpRequest) -> func.HttpResponse:
         )
         
     except ValueError as e:
+        logging.error(f'Invalid request body: {str(e)}')
         return func.HttpResponse(
             "Invalid request body",
             status_code=400
@@ -86,14 +94,17 @@ def get_tasks(req: func.HttpRequest) -> func.HttpResponse:
     
     # Get status filter if provided
     status = req.params.get('status')
+    logging.info(f'Filtering tasks by status: {status if status else "none"}')
     
     if status:
         filtered_tasks = [task for task in tasks if task['status'] == status]
+        logging.info(f'Retrieved {len(filtered_tasks)} tasks with status "{status}"')
         return func.HttpResponse(
             json.dumps(filtered_tasks),
             mimetype="application/json"
         )
     else:
+        logging.info(f'Retrieved all {len(tasks)} tasks')
         return func.HttpResponse(
             json.dumps(tasks),
             mimetype="application/json"
@@ -106,16 +117,19 @@ def get_task_by_id(req: func.HttpRequest) -> func.HttpResponse:
     
     # Get task ID from route
     task_id = req.route_params.get('id')
+    logging.info(f'Looking for task with ID: {task_id}')
     
     # Find task with matching ID
     task = next((t for t in tasks if t['id'] == task_id), None)
     
     if task:
+        logging.info(f'Found task: "{task["title"]}"')
         return func.HttpResponse(
             json.dumps(task),
             mimetype="application/json"
         )
     else:
+        logging.warning(f'Task with ID {task_id} not found')
         return func.HttpResponse(
             "Task not found",
             status_code=404
@@ -128,15 +142,18 @@ def update_task(req: func.HttpRequest) -> func.HttpResponse:
     
     # Get task ID from route
     task_id = req.route_params.get('id')
+    logging.info(f'Updating task with ID: {task_id}')
     
     try:
         # Get request body
         req_body = req.get_json()
+        logging.info(f'Update request body: {req_body}')
         
         # Find task with matching ID
         task_index = next((i for i, t in enumerate(tasks) if t['id'] == task_id), None)
         
         if task_index is None:
+            logging.warning(f'Task with ID {task_id} not found for update')
             return func.HttpResponse(
                 "Task not found",
                 status_code=404
@@ -155,6 +172,7 @@ def update_task(req: func.HttpRequest) -> func.HttpResponse:
         
         # Replace task in list
         tasks[task_index] = updated_task
+        logging.info(f'Task updated successfully: "{updated_task["title"]}"')
         
         return func.HttpResponse(
             json.dumps(updated_task),
@@ -162,6 +180,7 @@ def update_task(req: func.HttpRequest) -> func.HttpResponse:
         )
         
     except ValueError:
+        logging.error('Invalid request body for update')
         return func.HttpResponse(
             "Invalid request body",
             status_code=400
@@ -180,11 +199,13 @@ def delete_task(req: func.HttpRequest) -> func.HttpResponse:
     
     # Get task ID from route
     task_id = req.route_params.get('id')
+    logging.info(f'Attempting to delete task with ID: {task_id}')
     
     # Find task with matching ID
     task_index = next((i for i, t in enumerate(tasks) if t['id'] == task_id), None)
     
     if task_index is None:
+        logging.warning(f'Task with ID {task_id} not found for deletion')
         return func.HttpResponse(
             "Task not found",
             status_code=404
@@ -192,6 +213,7 @@ def delete_task(req: func.HttpRequest) -> func.HttpResponse:
     
     # Remove task from list
     deleted_task = tasks.pop(task_index)
+    logging.info(f'Task deleted successfully: "{deleted_task["title"]}"')
     
     return func.HttpResponse(
         json.dumps({"message": "Task deleted successfully", "task": deleted_task}),
@@ -205,11 +227,13 @@ def complete_task(req: func.HttpRequest) -> func.HttpResponse:
     
     # Get task ID from route
     task_id = req.route_params.get('id')
+    logging.info(f'Marking task with ID {task_id} as complete')
     
     # Find task with matching ID
     task_index = next((i for i, t in enumerate(tasks) if t['id'] == task_id), None)
     
     if task_index is None:
+        logging.warning(f'Task with ID {task_id} not found for completion')
         return func.HttpResponse(
             "Task not found",
             status_code=404
@@ -218,6 +242,7 @@ def complete_task(req: func.HttpRequest) -> func.HttpResponse:
     # Update task status and completion time
     tasks[task_index]["status"] = "completed"
     tasks[task_index]["completed_at"] = datetime.now().isoformat()
+    logging.info(f'Task marked as complete: "{tasks[task_index]["title"]}"')
     
     return func.HttpResponse(
         json.dumps(tasks[task_index]),
@@ -245,6 +270,8 @@ def task_completion_stats(req: func.HttpRequest) -> func.HttpResponse:
         "completion_percentage": round(completion_percentage, 2)
     }
     
+    logging.info(f'Analytics - Total: {total_tasks}, Completed: {completed_tasks}, Pending: {pending_tasks}, Completion: {round(completion_percentage, 2)}%')
+    
     return func.HttpResponse(
         json.dumps(stats),
         mimetype="application/json"
@@ -257,6 +284,7 @@ def productivity_metrics(req: func.HttpRequest) -> func.HttpResponse:
     
     # Get optional date parameter (for future filtering)
     period = req.params.get('period', 'all')
+    logging.info(f'Generating productivity metrics for period: {period}')
     
     # Calculate tasks created and completed
     tasks_created = len(tasks)
@@ -281,6 +309,8 @@ def productivity_metrics(req: func.HttpRequest) -> func.HttpResponse:
         "completion_rate": round((tasks_completed / tasks_created * 100) if tasks_created > 0 else 0, 2),
         "average_completion_time_hours": round(avg_completion_time, 2)
     }
+    
+    logging.info(f'Productivity metrics calculated - Tasks created: {tasks_created}, Tasks completed: {tasks_completed}, Avg completion time: {round(avg_completion_time, 2)} hours')
     
     return func.HttpResponse(
         json.dumps(metrics),
