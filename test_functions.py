@@ -3,48 +3,63 @@ import azure.functions as func
 import pytest
 import os
 import sys
-import time
-from datetime import datetime
 
-# Import directly from function_app
+# Add path to make imports work
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-import function_app
 
-# Ensure we have a storage connection string
-@pytest.fixture(scope="session", autouse=True)
-def check_environment():
-    # Check if the storage connection string is available
-    assert "AzureWebJobsStorage" in os.environ, "No storage connection string found in environment variables"
-    
-    # Create table if it doesn't exist
-    table_client = function_app.get_table_client()
-    # Wait a moment to ensure table is created
-    time.sleep(1)
-
-# Clean up before and after tests
+# Mock the Azure Table Storage for testing
 @pytest.fixture(autouse=True)
-def clean_table():
-    # Before test: Clean up any existing tasks
-    table_client = function_app.get_table_client()
-    try:
-        entities = table_client.query_entities("PartitionKey eq 'tasks'")
-        for entity in entities:
-            table_client.delete_entity('tasks', entity['RowKey'])
-    except Exception as e:
-        print(f"Error cleaning table: {str(e)}")
+def mock_table_storage(monkeypatch):
+    # Create a mock table client with in-memory storage
+    mock_tasks = []
     
-    # Run the test
-    yield
+    class MockTableClient:
+        def create_entity(self, entity):
+            mock_tasks.append(entity)
+            return entity
+            
+        def query_entities(self, filter_string):
+            if "status eq" in filter_string:
+                status = filter_string.split("'")[1]
+                return [entity for entity in mock_tasks if entity.get("status") == status]
+            return mock_tasks
+            
+        def get_entity(self, partition_key, row_key):
+            for entity in mock_tasks:
+                if entity.get("RowKey") == row_key:
+                    return entity
+            raise Exception("Entity not found")
+            
+        def update_entity(self, entity, mode=None):
+            for i, task in enumerate(mock_tasks):
+                if task.get("RowKey") == entity.get("RowKey"):
+                    mock_tasks[i] = entity
+                    return
+                    
+        def delete_entity(self, partition_key, row_key):
+            for i, task in enumerate(mock_tasks):
+                if task.get("RowKey") == row_key:
+                    mock_tasks.pop(i)
+                    return
     
-    # After test: Clean up again
-    try:
-        entities = table_client.query_entities("PartitionKey eq 'tasks'")
-        for entity in entities:
-            table_client.delete_entity('tasks', entity['RowKey'])
-    except Exception as e:
-        print(f"Error cleaning table: {str(e)}")
+    # Replace the get_table_client function
+    def mock_get_table_client():
+        return MockTableClient()
+        
+    # Apply the mock before importing function_app
+    monkeypatch.setattr("builtins.open", lambda *args, **kwargs: None)
+    
+    # Import functions only after setting up mocks
+    import function_app
+    monkeypatch.setattr("function_app.get_table_client", mock_get_table_client)
+    
+    # Clear mock tasks before each test
+    mock_tasks.clear()
 
 def test_create_task():
+    # Import the module inside the test function to avoid circular imports
+    import function_app
+    
     # Create a mock HTTP request
     req = func.HttpRequest(
         method='POST',
@@ -64,6 +79,9 @@ def test_create_task():
     assert response_body["status"] == "pending"
 
 def test_get_tasks():
+    # Import the module inside the test function to avoid circular imports
+    import function_app
+    
     # First create a task
     create_req = func.HttpRequest(
         method='POST',
