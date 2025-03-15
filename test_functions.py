@@ -1,13 +1,48 @@
 import json
 import azure.functions as func
 import pytest
-from function_app import app, tasks
+import os
+import sys
+import time
+from datetime import datetime
 
-# Clear tasks before each test
+# Import directly from function_app
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+import function_app
+
+# Ensure we have a storage connection string
+@pytest.fixture(scope="session", autouse=True)
+def check_environment():
+    # Check if the storage connection string is available
+    assert "AzureWebJobsStorage" in os.environ, "No storage connection string found in environment variables"
+    
+    # Create table if it doesn't exist
+    table_client = function_app.get_table_client()
+    # Wait a moment to ensure table is created
+    time.sleep(1)
+
+# Clean up before and after tests
 @pytest.fixture(autouse=True)
-def clear_tasks():
-    tasks.clear()
+def clean_table():
+    # Before test: Clean up any existing tasks
+    table_client = function_app.get_table_client()
+    try:
+        entities = table_client.query_entities("PartitionKey eq 'tasks'")
+        for entity in entities:
+            table_client.delete_entity('tasks', entity['RowKey'])
+    except Exception as e:
+        print(f"Error cleaning table: {str(e)}")
+    
+    # Run the test
     yield
+    
+    # After test: Clean up again
+    try:
+        entities = table_client.query_entities("PartitionKey eq 'tasks'")
+        for entity in entities:
+            table_client.delete_entity('tasks', entity['RowKey'])
+    except Exception as e:
+        print(f"Error cleaning table: {str(e)}")
 
 def test_create_task():
     # Create a mock HTTP request
@@ -18,11 +53,8 @@ def test_create_task():
         body=json.dumps({"title": "Test Task", "description": "Testing"}).encode()
     )
     
-    # Import the function directly
-    from function_app import create_task
-    
     # Call our function directly
-    resp = create_task(req)
+    resp = function_app.create_task(req)
     
     # Check response
     assert resp.status_code == 201
@@ -40,11 +72,8 @@ def test_get_tasks():
         body=json.dumps({"title": "Test Task"}).encode()
     )
     
-    # Import the functions directly
-    from function_app import create_task, get_tasks
-    
     # Create a task first
-    create_task(create_req)
+    function_app.create_task(create_req)
     
     # Now get all tasks
     get_req = func.HttpRequest(
@@ -54,7 +83,7 @@ def test_get_tasks():
     )
     
     # Call our function
-    resp = get_tasks(get_req)
+    resp = function_app.get_tasks(get_req)
     
     # Check response
     assert resp.status_code == 200
