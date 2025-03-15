@@ -32,6 +32,20 @@ def oladapofunction2(req: func.HttpRequest) -> func.HttpResponse:
              status_code=200
         )
 
+# Test slow response function for alert testing
+@app.route(route="test-slow-response")
+def test_slow_response(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('Testing slow response for alert monitoring.')
+    
+    # Simulate a long-running process (5-second delay)
+    import time
+    time.sleep(5)
+    
+    return func.HttpResponse(
+        "This response was intentionally delayed to test alerts",
+        status_code=200
+    )
+
 # Add new function: Create a new task
 @app.route(route="tasks", methods=["POST"])
 def create_task(req: func.HttpRequest) -> func.HttpResponse:
