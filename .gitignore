@@ -171,3 +171,4 @@ cython_debug/
 .pypirc
 
 .python_packages
+local.settings.json
