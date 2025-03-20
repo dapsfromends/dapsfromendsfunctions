@@ -17,13 +17,13 @@
       "routePrefix": "api",
       "cors": {
         "allowedOrigins": [
-          "*"
+          "https://white-sand-02b1ff710.6.azurestaticapps.net"
         ],
         "allowedMethods": [
-          "GET",
-          "POST",
-          "PUT",
-          "DELETE",
+          "GET", 
+          "POST", 
+          "PUT", 
+          "DELETE", 
           "PATCH"
         ],
         "allowedHeaders": [
