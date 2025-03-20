@@ -1,0 +1,7 @@
+POST http://localhost:7071/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Complete project",
+  "description": "Finish the task management API"
+}
