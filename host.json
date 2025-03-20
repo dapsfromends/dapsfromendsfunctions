@@ -20,15 +20,12 @@
           "https://white-sand-02b1ff710.6.azurestaticapps.net"
         ],
         "allowedMethods": [
-          "GET", 
-          "POST", 
-          "PUT", 
-          "DELETE", 
-          "PATCH"
+          "GET", "POST", "PUT", "DELETE", "PATCH"
         ],
         "allowedHeaders": [
           "Content-Type"
         ],
+        "exposedHeaders": [],
         "maxAge": 3600
       }
     }
