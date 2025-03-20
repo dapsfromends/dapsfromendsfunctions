@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Task Management System</h1>
+        </header>
+        
+        <div class="task-form">
+            <h2>Add New Task</h2>
+            <form id="task-form">
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description"></textarea>
+                </div>
+                <button type="submit">Add Task</button>
+            </form>
+        </div>
+        
+        <div class="task-list">
+            <h2>Your Tasks</h2>
+            <div class="filter">
+                <label>Filter: </label>
+                <select id="status-filter">
+                    <option value="all">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            <div id="tasks-container"></div>
+        </div>
+        
+        <div class="analytics">
+            <h2>Analytics</h2>
+            <div id="analytics-container">
+                <div class="stat-box">
+                    <h3>Total Tasks</h3>
+                    <p id="total-tasks">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Completed</h3>
+                    <p id="completed-tasks">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Pending</h3>
+                    <p id="pending-tasks">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Completion Rate</h3>
+                    <p id="completion-percentage">0%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
